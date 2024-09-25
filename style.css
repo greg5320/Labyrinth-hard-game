@@ -1,0 +1,47 @@
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
+#maze {
+    display: grid;
+    grid-template-columns: repeat(21, 20px);
+    grid-template-rows: repeat(21, 20px);
+}
+
+.cell {
+    width: 20px;
+    height: 20px;
+    border: 1px solid #000;
+}
+
+.cell.wall {
+    background-color: black; /* По умолчанию черный цвет */
+}
+
+.cell.path {
+    background-color: white;
+}
+
+.cell.start {
+    background-color: green;
+}
+
+.cell.end {
+    background-color: red;
+}
+
+.cell.player {
+    background-color: orange;
+    border-radius: 50%;
+}
+
+.cell.enemy {
+    background-color: red;
+    border-radius: 50%;
+}
