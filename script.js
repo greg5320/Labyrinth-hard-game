@@ -1,4 +1,4 @@
-const colors = ['black', 'red', 'green', 'cyan', 'blue', 'purple'];
+const colors = ['black', 'purple', 'green', 'blue', 'red', 'cyan'];
 let currentLevel = 0;
 let mazeSize = 21;
 const maze = [];
@@ -20,6 +20,19 @@ function createMaze() {
   }
 }
 
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
+function updateLevelDisplay() {
+  const levelDisplay = document.getElementById('level-display');
+  levelDisplay.textContent = `Level: ${currentLevel + 1}`;
+}
+
+
 function generateMaze(x, y) {
   maze[x][y].wall = false;
   shuffle(directions);
@@ -33,34 +46,61 @@ function generateMaze(x, y) {
       generateMaze(newX, newY);
     }
   }
-  const entranceY = Math.floor(mazeSize / 2);
-  if (maze[mazeSize - 2][entranceY].wall) {
-    maze[mazeSize - 2][entranceY].wall = false;
-  }
-  if (maze[1][entranceY].wall) {
-    maze[1][entranceY].wall = false;
-  }
 }
 
-function shuffle(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
+
+function addRoomsAndExtraPaths() {
+  const roomSize = 1; 
+  const numRooms = Math.floor(mazeSize / 5); 
+
+  for (let i = 0; i < numRooms; i++) {
+    const roomX = Math.floor(Math.random() * (mazeSize - roomSize - 1)) + 1;
+    const roomY = Math.floor(Math.random() * (mazeSize - roomSize - 1)) + 1;
+
+    
+    for (let dx = 0; dx < roomSize; dx++) {
+      for (let dy = 0; dy < roomSize; dy++) {
+        maze[roomX + dx][roomY + dy].wall = false;
+      }
+    }
+  }
+
+  
+  const extraPaths = Math.floor(mazeSize / 3); 
+
+  for (let i = 0; i < extraPaths; i++) {
+    const startX = Math.floor(Math.random() * mazeSize);
+    const startY = Math.floor(Math.random() * mazeSize);
+    const direction = directions[Math.floor(Math.random() * directions.length)];
+
+    const endX = startX + direction.x;
+    const endY = startY + direction.y;
+
+    if (
+      endX > 0 && endX < mazeSize &&
+      endY > 0 && endY < mazeSize &&
+      !maze[endX][endY].wall
+    ) {
+      maze[startX][startY].wall = false;
+    }
   }
 }
 
 function drawMaze() {
   const mazeContainer = document.getElementById('maze');
   mazeContainer.innerHTML = '';
-  mazeContainer.style.gridTemplateColumns = `repeat(${mazeSize}, 20px)`;
-  mazeContainer.style.gridTemplateRows = `repeat(${mazeSize}, 20px)`;
   
+  // Рассчитываем размер ячеек в зависимости от размера лабиринта
+  const cellSize = mazeSize > 45 ? 15 : 20; // Уменьшаем размер ячейки для больших лабиринтов
+  mazeContainer.style.gridTemplateColumns = `repeat(${mazeSize}, ${cellSize}px)`;
+  mazeContainer.style.gridTemplateRows = `repeat(${mazeSize}, ${cellSize}px)`;
+
   for (let i = 0; i < mazeSize; i++) {
     for (let j = 0; j < mazeSize; j++) {
       const cell = document.createElement('div');
       cell.classList.add('cell');
       if (maze[i][j].wall) {
-        cell.style.backgroundColor = colors[currentLevel];
+        cell.style.backgroundColor = colors[Math.min(currentLevel, colors.length - 1)];
         cell.classList.add('wall');
       } else {
         cell.classList.add('path');
@@ -74,11 +114,16 @@ function createEntranceAndExit() {
   const entrance = { x: mazeSize - 1, y: Math.floor(mazeSize / 2) };
   maze[entrance.x][entrance.y].start = true;
   maze[entrance.x][entrance.y].wall = false;
+  const entrance1 = { x: mazeSize - 2, y: Math.floor(mazeSize / 2) };
+  maze[entrance1.x][entrance1.y].start = true;
+  maze[entrance1.x][entrance1.y].wall = false;
 
   const exit = { x: 0, y: Math.floor(mazeSize / 2) };
   maze[exit.x][exit.y].end = true;
   maze[exit.x][exit.y].wall = false;
-
+  const exit1 = { x: 1, y: Math.floor(mazeSize / 2) };
+  maze[exit1.x][exit1.y].end = false;
+  maze[exit1.x][exit1.y].wall = false;
   drawMaze();
   drawPlayer();
   drawEnemy();
@@ -106,12 +151,9 @@ function movePlayer(dx, dy) {
 
     if (maze[playerPosition.x][playerPosition.y].end) {
       currentLevel++;
-      if (currentLevel < colors.length) {
-        mazeSize += 4;
-        resetGame();
-      } else {
-        alert('Вы прошли все уровни!');
-      }
+      mazeSize += 4;
+      updateLevelDisplay(); 
+      resetGame();
     } else {
       moveEnemy();
     }
@@ -120,16 +162,16 @@ function movePlayer(dx, dy) {
 
 document.addEventListener('keydown', (event) => {
   switch (event.key) {
-    case 'ArrowUp':
+    case 'w':
       movePlayer(-1, 0);
       break;
-    case 'ArrowDown':
+    case 's':
       movePlayer(1, 0);
       break;
-    case 'ArrowLeft':
+    case 'a':
       movePlayer(0, -1);
       break;
-    case 'ArrowRight':
+    case 'd':
       movePlayer(0, 1);
       break;
   }
@@ -210,21 +252,20 @@ function moveEnemy() {
 
 function resetGame() {
   currentLevel = Math.min(currentLevel, colors.length - 1);
-  mazeSize = 21 + (currentLevel * 4);
   playerPosition = { x: mazeSize - 1, y: Math.floor(mazeSize / 2) };
   enemyPosition = { x: 0, y: Math.floor(mazeSize / 2) };
   createMaze();
   generateMaze(1, 1);
-  drawMaze();
+  addRoomsAndExtraPaths();
   createEntranceAndExit();
-  document.getElementById('level').textContent = `Текущий уровень: ${currentLevel+1}`;
-  updateWallColors();
+  updateLevelDisplay(); 
 }
 
 function updateWallColors() {
   document.querySelectorAll('.cell.wall').forEach(cell => {
-    cell.style.backgroundColor = colors[(level - 1) % colors.length];
+    cell.style.backgroundColor = colors[(currentLevel) % colors.length];
   });
 }
 
 resetGame();
+

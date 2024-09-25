@@ -12,6 +12,7 @@ body {
     display: grid;
     grid-template-columns: repeat(21, 20px);
     grid-template-rows: repeat(21, 20px);
+    overflow: auto;
 }
 
 .cell {
@@ -21,7 +22,7 @@ body {
 }
 
 .cell.wall {
-    background-color: black; /* По умолчанию черный цвет */
+    background-color: black; 
 }
 
 .cell.path {
