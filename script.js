@@ -1,6 +1,6 @@
-const colors = ['black', 'purple', 'green', 'blue', 'red', 'cyan'];
+const colors = ['black', 'purple', 'orange', 'blue', 'red', 'cyan'];
 let currentLevel = 0;
-let mazeSize = 21;
+let mazeSize = 25;
 const maze = [];
 const directions = [
   { x: 0, y: -1 },
@@ -8,6 +8,11 @@ const directions = [
   { x: 0, y: 1 },
   { x: -1, y: 0 }
 ];
+let finish = false;
+let intervalId;
+let prevTapTime = Date.now()
+
+
 let playerPosition = { x: mazeSize - 1, y: Math.floor(mazeSize / 2) };
 let enemyPosition = { x: 0, y: Math.floor(mazeSize / 2) };
 
@@ -90,8 +95,8 @@ function drawMaze() {
   const mazeContainer = document.getElementById('maze');
   mazeContainer.innerHTML = '';
   
-  // Рассчитываем размер ячеек в зависимости от размера лабиринта
-  const cellSize = mazeSize > 45 ? 15 : 20; // Уменьшаем размер ячейки для больших лабиринтов
+ 
+  const cellSize = mazeSize > 45 ? 15 : 20; 
   mazeContainer.style.gridTemplateColumns = `repeat(${mazeSize}, ${cellSize}px)`;
   mazeContainer.style.gridTemplateRows = `repeat(${mazeSize}, ${cellSize}px)`;
 
@@ -133,11 +138,47 @@ function drawPlayer() {
   const oldPlayerCell = document.querySelector('.player');
   if (oldPlayerCell) {
     oldPlayerCell.classList.remove('player');
+    oldPlayerCell.style.width = '';  
+    oldPlayerCell.style.height = '';
+    oldPlayerCell.style.borderRadius = '';
   }
 
   const newPlayerIndex = playerPosition.y + 1 + mazeSize * playerPosition.x;
   const newPlayerCell = document.querySelector(`#maze div:nth-child(${newPlayerIndex})`);
+
+  const cellSize = mazeSize > 45 ? 15 : 20;
+  const playerSize = cellSize * 0.8; 
+
   newPlayerCell.classList.add('player');
+  newPlayerCell.style.width = `${playerSize}px`; 
+  newPlayerCell.style.height = `${playerSize}px`;
+  newPlayerCell.style.borderRadius = `${playerSize / 2}px`; 
+}
+
+function drawEnemy() {
+  const oldEnemyCell = document.querySelector('.enemy');
+  if (oldEnemyCell) {
+    oldEnemyCell.classList.remove('enemy');
+    oldEnemyCell.style.width = '';  // сбрасываем измененные стили
+    oldEnemyCell.style.height = '';
+    oldEnemyCell.style.borderRadius = '';
+  }
+
+  const newEnemyIndex = enemyPosition.y + 1 + mazeSize * enemyPosition.x;
+  const newEnemyCell = document.querySelector(`#maze div:nth-child(${newEnemyIndex})`);
+
+ 
+  const cellSize = mazeSize > 45 ? 15 : 20;
+  const enemySize = cellSize * 0.8; 
+
+  newEnemyCell.classList.add('enemy');
+  newEnemyCell.style.width = `${enemySize}px`; 
+  newEnemyCell.style.height = `${enemySize}px`;
+  newEnemyCell.style.borderRadius = `${enemySize / 2}px`;
+}
+
+function getRandomArbitrary(min, max) {
+  return Math.random() * (max - min) + min;
 }
 
 function movePlayer(dx, dy) {
@@ -155,38 +196,38 @@ function movePlayer(dx, dy) {
       updateLevelDisplay(); 
       resetGame();
     } else {
-      moveEnemy();
+      let timeDelta = Date.now() - prevTapTime
+      let delta = getRandomArbitrary(timeDelta / 2,timeDelta*2)
+      if (delta > 200) {
+        delta =  getRandomArbitrary(150, 250)
+      } else if (delta < 50) {
+        delta =  getRandomArbitrary(50, 75)
+      }
+      prevTapTime = Date.now()
+      clearInterval(intervalId)
+      intervalId = setInterval(moveEnemy, delta);
     }
   }
 }
 
 document.addEventListener('keydown', (event) => {
   switch (event.key) {
-    case 'w':
+    case 'ArrowUp':
       movePlayer(-1, 0);
       break;
-    case 's':
+    case 'ArrowDown':
       movePlayer(1, 0);
       break;
-    case 'a':
+    case 'ArrowLeft':
       movePlayer(0, -1);
       break;
-    case 'd':
+    case 'ArrowRight':
       movePlayer(0, 1);
       break;
   }
 });
 
-function drawEnemy() {
-  const oldEnemyCell = document.querySelector('.enemy');
-  if (oldEnemyCell) {
-    oldEnemyCell.classList.remove('enemy');
-  }
 
-  const newEnemyIndex = enemyPosition.y + 1 + mazeSize * enemyPosition.x;
-  const newEnemyCell = document.querySelector(`#maze div:nth-child(${newEnemyIndex})`);
-  newEnemyCell.classList.add('enemy');
-}
 
 function bfs(start, goal) {
   const queue = [start];
@@ -223,6 +264,8 @@ function bfs(start, goal) {
   return reconstructPath(goal, cameFrom);
 }
 
+
+
 function reconstructPath(goal, cameFrom) {
   const path = [];
   let current = goal;
@@ -235,8 +278,8 @@ function reconstructPath(goal, cameFrom) {
   path.reverse();
   return path.length > 1 ? path : null;
 }
-
 function moveEnemy() {
+
   const path = bfs(enemyPosition, playerPosition);
   
   if (path && path.length > 1) {
@@ -244,8 +287,9 @@ function moveEnemy() {
     drawEnemy();
   }
 
-  if (enemyPosition.x === playerPosition.x && enemyPosition.y === playerPosition.y) {
+  if (enemyPosition.x === playerPosition.x && enemyPosition.y === playerPosition.y && !finish) {
     alert('Вас поймал враг! Возвращаем на первый уровень.');
+    finish = true
     location.reload();
   }
 }
@@ -259,6 +303,8 @@ function resetGame() {
   addRoomsAndExtraPaths();
   createEntranceAndExit();
   updateLevelDisplay(); 
+  prevTapTime = Date.now()
+  finish = false
 }
 
 function updateWallColors() {
